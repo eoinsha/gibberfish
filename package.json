@@ -1,0 +1,28 @@
+{
+  "name": "gibberfish",
+  "version": "1.0.0",
+  "description": "Generate random videos with sync'd captions",
+  "main": "index.js",
+  "scripts": {
+    "test": "tap test --100"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/eoinsha/gibberfish.git"
+  },
+  "keywords": [
+    "video",
+    "random",
+    "generate"
+  ],
+  "author": "Eoin Shanaghy <eoin@showpiper.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/eoinsha/gibberfish/issues"
+  },
+  "homepage": "https://github.com/eoinsha/gibberfish#readme",
+  "dependencies": {
+    "random-words": "0.0.1",
+    "request": "^2.75.0"
+  }
+}
