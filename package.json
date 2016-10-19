@@ -22,7 +22,9 @@
   },
   "homepage": "https://github.com/eoinsha/gibberfish#readme",
   "dependencies": {
+    "js-string-escape": "^1.0.1",
     "random-words": "0.0.1",
-    "request": "^2.75.0"
+    "randomcolor": "^0.4.4",
+    "saytime": "^1.1.0"
   }
 }
