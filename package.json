@@ -25,6 +25,7 @@
     "js-string-escape": "^1.0.1",
     "random-words": "0.0.1",
     "randomcolor": "^0.4.4",
+    "rimraf": "^2.5.4",
     "saytime": "^1.1.0"
   }
 }
