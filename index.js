@@ -6,6 +6,7 @@ const Async = require('async');
 const RandomColor = require('randomcolor');
 const Rimraf = require('rimraf');
 const Saytime = require('saytime');
+const SixtySixty = require('sixty-sixty');
 const StringEscape = require('js-string-escape');
 const textGen = require('./lib/text-gen');
 
@@ -48,7 +49,7 @@ function renderFrames(state, done) {
 
 function renderFrame(part, id, done) {
   const imgPath = path.join(tempDir, `${id}.png`);
-  const text = StringEscape(part.sentence.match(/(([^\W]+\W){1,6})/g).join('\n')) + `\n${id}:${part.timestamp}`;;
+  const text = StringEscape(part.sentence.match(/(([^\W]+\W){1,6})/g).join('\n')) + `\n#${id} | ${SixtySixty(part.timestamp)}`;;
   execFile('gm', [ 'convert', '-size', '640x360', `xc:${RandomColor()}`, '-fill', 'black', '-pointsize', '24', '-gravity', 'Center', '-draw',
       `text 0,0 "${text}"`, imgPath ], error => {
     if (error) {

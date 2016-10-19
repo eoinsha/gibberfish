@@ -4,6 +4,7 @@
   "description": "Generate random videos with sync'd captions",
   "main": "index.js",
   "scripts": {
+    "postversion": "git push origin HEAD && git push origin v${npm_package_version}",
     "test": "tap test --100"
   },
   "repository": {
@@ -26,6 +27,7 @@
     "random-words": "0.0.1",
     "randomcolor": "^0.4.4",
     "rimraf": "^2.5.4",
-    "saytime": "^1.1.0"
+    "saytime": "^1.1.0",
+    "sixty-sixty": "^1.0.0"
   }
 }
