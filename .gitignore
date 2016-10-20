@@ -17,3 +17,5 @@ lib-cov
 *.swp
 .nyc_output/
 *.mp4
+*.srt
+*.vtt

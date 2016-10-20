@@ -28,6 +28,7 @@
     "randomcolor": "^0.4.4",
     "rimraf": "^2.5.4",
     "saytime": "^1.1.0",
-    "sixty-sixty": "^1.0.0"
+    "sixty-sixty": "^2.0.0",
+    "vtt-to-srt": "^0.1.0"
   }
 }

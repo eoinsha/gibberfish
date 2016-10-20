@@ -8,10 +8,14 @@ const Rimraf = require('rimraf');
 const Saytime = require('saytime');
 const SixtySixty = require('sixty-sixty');
 const StringEscape = require('js-string-escape');
+const Vtt2srt = require('vtt-to-srt');
+
 const textGen = require('./lib/text-gen');
 
 const log = console;
 const text = textGen();
+const ss = SixtySixty();
+const ssHrs = SixtySixty({ showHours: true });
 
 let tempDir;
 
@@ -21,6 +25,8 @@ Async.waterfall([
   createTempDir,
   renderAudio,
   renderFrames,
+  renderVtt,
+  renderSrt,
   renderVideoParts,
   makePlaylist,
   assembleVideoParts,
@@ -38,6 +44,31 @@ function renderAudio(done) {
   Saytime(text, { out: path.join(tempDir, 'out.wav') }, done);
 }
 
+function renderVtt(state, done) {
+  const vttPath = path.join(tempDir, 'subtitles.vtt');
+  const vttStream = fs.createWriteStream(vttPath);
+  Async.eachOfSeries(state.parts, (part, idx, cb) => {
+    const from = ssHrs(part.timestamp);
+    const to = ssHrs(part.timestamp + part.duration);
+    // Add the title number as an identifier. This also allows the vtt2srt to work
+    // as it assumes numeric identifiers
+    vttStream.write(`${idx + 1}\n${from} --> ${to}\n${part.wrappedText}\n\n`, 'UTF-8', cb);
+  }, error => {
+    if (error) {
+      return done(error);
+    }
+    return done(null, Object.assign(state, { vttPath } ));
+  });
+}
+
+function renderSrt(state, done) {
+  const srtPath = path.join(tempDir, 'subtitles.srt');
+  Object.assign(state, { srtPath });
+  const stream = fs.createReadStream(state.vttPath).pipe(Vtt2srt()).pipe(fs.createWriteStream(srtPath));
+  stream.on('error', err => done(err));
+  stream.on('finish', () => done(null, state));
+}
+
 function renderFrames(state, done) {
   Async.mapValuesLimit(state.parts, 20, renderFrame, (err, framesObj) => {
     if (err) {
@@ -49,13 +80,14 @@ function renderFrames(state, done) {
 
 function renderFrame(part, id, done) {
   const imgPath = path.join(tempDir, `${id}.png`);
-  const text = StringEscape(part.sentence.match(/(([^\W]+\W){1,6})/g).join('\n')) + `\n#${id} | ${SixtySixty(part.timestamp)}`;;
+  const wrappedText = part.sentence.match(/(([^\W]+\W){1,6})/g).join('\n');
+  const frameText = StringEscape(`${wrappedText}\n#${id} | ${ss(part.timestamp)}`);
   execFile('gm', [ 'convert', '-size', '640x360', `xc:${RandomColor()}`, '-fill', 'black', '-pointsize', '24', '-gravity', 'Center', '-draw',
-      `text 0,0 "${text}"`, imgPath ], error => {
+      `text 0,0 "${frameText}"`, imgPath ], error => {
     if (error) {
       return done(error);
     }
-    return done(null, Object.assign(part, { imgPath }), id);
+    return done(null, Object.assign(part, { imgPath, wrappedText }), id);
   });
 }
 
@@ -114,7 +146,7 @@ function muxAudio(state, done) {
 }
 
 function createTempDir(cb) {
-  fs.mkdtemp('/tmp/gibberfish-', (err, dir) => {
+  fs.mkdtemp(path.join(os.tmpdir(), 'gibberfish-'), (err, dir) => {
     tempDir = dir;
     cb(err);
   });
@@ -125,9 +157,13 @@ function cleanTempDir(result, cb) {
 }
 
 function processResult(state, cb) {
-  fs.rename(state.muxedVidPath, finalVidPath, err => {
-    return cb(err, finalVidPath);
-  });
+  const finalPathPrefix = path.join(path.dirname(finalVidPath), path.basename(finalVidPath, '.mp4'));
+  Async.each([
+      {from: state.muxedVidPath, to: finalVidPath},
+      {from: state.vttPath, to: finalPathPrefix + '.vtt'},
+      {from: state.srtPath, to: finalPathPrefix + '.srt'}],
+    (pair, pairDone) => fs.rename(pair.from, pair.to, pairDone),
+    err => cb(err, finalVidPath));
 }
 
 function execFile(file, args, cb) {
