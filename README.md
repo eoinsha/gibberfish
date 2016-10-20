@@ -20,7 +20,9 @@ Gibberfish requires:
 # Usage
 
 ```
-node index.js [output.mp4]
+npm install -g gibberfish
+
+gibberfish [output.mp4]
 ```
 
 - Generates `output.mp4`, `output.srt` and `output.vtt`

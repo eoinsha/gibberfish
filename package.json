@@ -2,6 +2,9 @@
   "name": "gibberfish",
   "version": "1.2.1",
   "description": "Generate random videos with sync'd captions",
+  "bin": {
+    "gibberfish": "bin/run.js"
+  },
   "main": "index.js",
   "scripts": {
     "postversion": "git push origin HEAD && git push origin v${npm_package_version}",
@@ -27,7 +30,7 @@
     "random-words": "0.0.1",
     "randomcolor": "^0.4.4",
     "rimraf": "^2.5.4",
-    "saytime": "^1.1.0",
+    "saytime": "^2.1.1",
     "sixty-sixty": "^2.0.0",
     "vtt-to-srt": "^0.1.0"
   }
