@@ -1,6 +1,6 @@
 {
   "name": "gibberfish",
-  "version": "1.2.1",
+  "version": "2.0.0",
   "description": "Generate random videos with sync'd captions",
   "bin": {
     "gibberfish": "bin/run.js"
