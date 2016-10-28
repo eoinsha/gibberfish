@@ -4,6 +4,8 @@ const os = require('os');
 const path = require('path');
 
 const Async = require('async');
+const ConcatStream = require('concat-stream');
+const EndOfStream = require('end-of-stream');
 const RandomColor = require('randomcolor');
 const Rimraf = require('rimraf');
 const Saytime = require('saytime');
@@ -14,18 +16,17 @@ const Vtt2srt = require('vtt-to-srt');
 const textGen = require('./lib/text-gen');
 
 const log = console;
-const text = textGen();
 const ss = SixtySixty();
 const ssHrs = SixtySixty({ showHours: true });
 
 
 module.exports = function(options, done) {
   const finalVidPath = options.out || 'out.mp4';
-
   let tempDir;
 
   Async.waterfall([
     createTempDir,
+    getTextContent,
     renderAudio,
     renderFrames,
     renderVtt,
@@ -43,7 +44,20 @@ module.exports = function(options, done) {
     log.info('RESULT', result);
   });
 
-  function renderAudio(done) {
+  function getTextContent(done) {
+    if (options.inputStream) {
+      return EndOfStream(
+        options.inputStream.pipe(ConcatStream(result => done(null, result.toString('utf-8')))),
+        err => {
+          if (err) {
+            return done(err);
+          }
+        });
+    }
+    return setImmediate(() => done(null, textGen()));
+  }
+
+  function renderAudio(text, done) {
     Saytime(text, { out: path.join(tempDir, 'out.wav') }, done);
   }
 

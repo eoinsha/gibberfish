@@ -22,7 +22,17 @@ Gibberfish requires:
 ```
 npm install -g gibberfish
 
-gibberfish [output.mp4]
+gibberfish output.mp4
 ```
 
-- Generates `output.mp4`, `output.srt` and `output.vtt`
+- Generates `output.mp4`, `output.srt` and `output.vtt` with randomly-generated text input
+
+```
+gibberfish -f inputfile.txt output.mp4
+```
+- Generates outputs using the text provided
+
+```
+gibberfish -f - output.mp4
+```
+- Generates outputs using the text provided on STDIN

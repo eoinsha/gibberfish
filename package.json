@@ -26,12 +26,15 @@
   },
   "homepage": "https://github.com/eoinsha/gibberfish#readme",
   "dependencies": {
+    "concat-stream": "^1.5.2",
+    "end-of-stream": "^1.1.0",
     "js-string-escape": "^1.0.1",
     "random-words": "0.0.1",
     "randomcolor": "^0.4.4",
     "rimraf": "^2.5.4",
     "saytime": "^2.1.1",
     "sixty-sixty": "^2.0.0",
-    "vtt-to-srt": "^0.1.0"
+    "vtt-to-srt": "^0.1.0",
+    "yargs": "^6.3.0"
   }
 }
