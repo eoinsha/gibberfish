@@ -4,16 +4,14 @@ const os = require('os');
 const path = require('path');
 
 const Async = require('async');
-const ConcatStream = require('concat-stream');
-const EndOfStream = require('end-of-stream');
 const RandomColor = require('randomcolor');
 const Rimraf = require('rimraf');
 const Saytime = require('saytime');
 const SixtySixty = require('sixty-sixty');
 const StringEscape = require('js-string-escape');
 const Vtt2srt = require('vtt-to-srt');
-
-const textGen = require('./lib/text-gen');
+const Wrap = require('wordwrap');
+const LineWrap = Wrap(60);
 
 const log = console;
 const ss = SixtySixty();
@@ -22,11 +20,12 @@ const ssHrs = SixtySixty({ showHours: true });
 
 module.exports = function(options, done) {
   const finalVidPath = options.out || 'out.mp4';
+  const text = options.in;
+
   let tempDir;
 
   Async.waterfall([
     createTempDir,
-    getTextContent,
     renderAudio,
     renderFrames,
     renderVtt,
@@ -44,20 +43,8 @@ module.exports = function(options, done) {
     log.info('RESULT', result);
   });
 
-  function getTextContent(done) {
-    if (options.inputStream) {
-      return EndOfStream(
-        options.inputStream.pipe(ConcatStream(result => done(null, result.toString('utf-8')))),
-        err => {
-          if (err) {
-            return done(err);
-          }
-        });
-    }
-    return setImmediate(() => done(null, textGen()));
-  }
 
-  function renderAudio(text, done) {
+  function renderAudio(done) {
     Saytime(text, { out: path.join(tempDir, 'out.wav') }, done);
   }
 
@@ -97,7 +84,7 @@ module.exports = function(options, done) {
 
   function renderFrame(part, id, done) {
     const imgPath = path.join(tempDir, `${id}.png`);
-    const wrappedText = part.sentence.match(/(([^\W]+\W){1,6})/g).join('\n');
+    const wrappedText = LineWrap(part.sentence);
     const frameText = StringEscape(`${wrappedText}\n#${id} | ${ss(part.timestamp)}`);
     execFile('gm', [ 'convert', '-size', '640x360', `xc:${RandomColor()}`, '-fill', 'black', '-pointsize', '24', '-gravity', 'Center', '-draw',
         `text 0,0 "${frameText}"`, imgPath ], error => {

@@ -35,6 +35,7 @@
     "saytime": "^2.1.1",
     "sixty-sixty": "^2.0.0",
     "vtt-to-srt": "^0.1.0",
+    "wordwrap": "^1.0.0",
     "yargs": "^6.3.0"
   }
 }
