@@ -41,6 +41,28 @@ module.exports = function(options, done) {
     Saytime(text, { out: path.join(tempDir, 'out.wav') }, audioDone);
   }
 
+  function renderFrames(state, framesDone) {
+    Async.mapValuesLimit(state.parts, 20, renderFrame, (err, framesObj) => {
+      if (err) {
+        return framesDone(err);
+      }
+      return framesDone(null, state);
+    });
+  }
+
+  function renderFrame(part, id, frameDone) {
+    const imgPath = path.join(tempDir, `${id}.png`);
+    const wrappedText = LineWrap(part.sentence);
+    const frameText = `${wrappedText}\n#${id} | ${ss(part.timestamp)}`;
+    execFile('gm', [ 'convert', '-size', '640x360', `xc:${RandomColor()}`, '-fill', 'black', '-pointsize', '24', '-gravity', 'Center', '-draw',
+        `text 0,0 "${gmSafeEscape(frameText)}"`, imgPath ], error => {
+      if (error) {
+        return frameDone(error);
+      }
+      return frameDone(null, Object.assign(part, { imgPath, wrappedText }), id);
+    });
+  }
+
   function renderVtt(state, vttDone) {
     const vttPath = path.join(tempDir, 'subtitles.vtt');
     const vttStream = fs.createWriteStream(vttPath);
@@ -64,28 +86,6 @@ module.exports = function(options, done) {
     const stream = fs.createReadStream(state.vttPath).pipe(Vtt2srt()).pipe(fs.createWriteStream(srtPath));
     stream.on('error', err => srtDone(err));
     stream.on('finish', () => srtDone(null, state));
-  }
-
-  function renderFrames(state, framesDone) {
-    Async.mapValuesLimit(state.parts, 20, renderFrame, (err, framesObj) => {
-      if (err) {
-        return framesDone(err);
-      }
-      return framesDone(null, state);
-    });
-  }
-
-  function renderFrame(part, id, frameDone) {
-    const imgPath = path.join(tempDir, `${id}.png`);
-    const wrappedText = LineWrap(part.sentence);
-    const frameText = `${wrappedText}\n#${id} | ${ss(part.timestamp)}`;
-    execFile('gm', [ 'convert', '-size', '640x360', `xc:${RandomColor()}`, '-fill', 'black', '-pointsize', '24', '-gravity', 'Center', '-draw',
-        `text 0,0 "${frameText}"`, imgPath ], error => {
-      if (error) {
-        return frameDone(error);
-      }
-      return frameDone(null, Object.assign(part, { imgPath, wrappedText }), id);
-    });
   }
 
   function renderVideoParts(state, partsDone) {
@@ -166,5 +166,26 @@ module.exports = function(options, done) {
   function execFile(file, args, cb) {
     log.info('RUNNING', file, args.join(' '));
     childProcess.execFile(file, args, cb);
+  }
+
+  /**
+   * Based on https://github.com/joliss/js-string-escape
+   */
+  function gmSafeEscape(str) {
+    return str.replace(/["\\\n\r\u2028\u2029]/g, function (character) {
+      switch (character) {
+        case '"':
+        case '\\':
+          return '\\' + character;
+        case '\n':
+          return '\\n';
+        case '\r':
+          return '\\r';
+        case '\u2028':
+          return '\\u2028';
+        case '\u2029':
+          return '\\u2029';
+      }
+    });
   }
 };
