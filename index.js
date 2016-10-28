@@ -8,7 +8,6 @@ const RandomColor = require('randomcolor');
 const Rimraf = require('rimraf');
 const Saytime = require('saytime');
 const SixtySixty = require('sixty-sixty');
-const StringEscape = require('js-string-escape');
 const Vtt2srt = require('vtt-to-srt');
 const Wrap = require('wordwrap');
 const LineWrap = Wrap(60);
@@ -79,7 +78,7 @@ module.exports = function(options, done) {
   function renderFrame(part, id, frameDone) {
     const imgPath = path.join(tempDir, `${id}.png`);
     const wrappedText = LineWrap(part.sentence);
-    const frameText = StringEscape(`${wrappedText}\n#${id} | ${ss(part.timestamp)}`);
+    const frameText = `${wrappedText}\n#${id} | ${ss(part.timestamp)}`;
     execFile('gm', [ 'convert', '-size', '640x360', `xc:${RandomColor()}`, '-fill', 'black', '-pointsize', '24', '-gravity', 'Center', '-draw',
         `text 0,0 "${frameText}"`, imgPath ], error => {
       if (error) {
