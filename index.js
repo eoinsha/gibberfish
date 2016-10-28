@@ -36,19 +36,13 @@ module.exports = function(options, done) {
     muxAudio,
     processResult,
     cleanTempDir
-  ], (err, result) => {
-    if (err) {
-      return log.error('ERROR', err);
-    }
-    log.info('RESULT', result);
-  });
+  ], done);
 
-
-  function renderAudio(done) {
-    Saytime(text, { out: path.join(tempDir, 'out.wav') }, done);
+  function renderAudio(audioDone) {
+    Saytime(text, { out: path.join(tempDir, 'out.wav') }, audioDone);
   }
 
-  function renderVtt(state, done) {
+  function renderVtt(state, vttDone) {
     const vttPath = path.join(tempDir, 'subtitles.vtt');
     const vttStream = fs.createWriteStream(vttPath);
     Async.eachOfSeries(state.parts, (part, idx, cb) => {
@@ -59,105 +53,105 @@ module.exports = function(options, done) {
       vttStream.write(`${idx + 1}\n${from} --> ${to}\n${part.wrappedText}\n\n`, 'UTF-8', cb);
     }, error => {
       if (error) {
-        return done(error);
+        return vttDone(error);
       }
-      return done(null, Object.assign(state, { vttPath } ));
+      return vttDone(null, Object.assign(state, { vttPath } ));
     });
   }
 
-  function renderSrt(state, done) {
+  function renderSrt(state, srtDone) {
     const srtPath = path.join(tempDir, 'subtitles.srt');
     Object.assign(state, { srtPath });
     const stream = fs.createReadStream(state.vttPath).pipe(Vtt2srt()).pipe(fs.createWriteStream(srtPath));
-    stream.on('error', err => done(err));
-    stream.on('finish', () => done(null, state));
+    stream.on('error', err => srtDone(err));
+    stream.on('finish', () => srtDone(null, state));
   }
 
-  function renderFrames(state, done) {
+  function renderFrames(state, framesDone) {
     Async.mapValuesLimit(state.parts, 20, renderFrame, (err, framesObj) => {
       if (err) {
-        return done(err);
+        return framesDone(err);
       }
-      return done(null, state);
+      return framesDone(null, state);
     });
   }
 
-  function renderFrame(part, id, done) {
+  function renderFrame(part, id, frameDone) {
     const imgPath = path.join(tempDir, `${id}.png`);
     const wrappedText = LineWrap(part.sentence);
     const frameText = StringEscape(`${wrappedText}\n#${id} | ${ss(part.timestamp)}`);
     execFile('gm', [ 'convert', '-size', '640x360', `xc:${RandomColor()}`, '-fill', 'black', '-pointsize', '24', '-gravity', 'Center', '-draw',
         `text 0,0 "${frameText}"`, imgPath ], error => {
       if (error) {
-        return done(error);
+        return frameDone(error);
       }
-      return done(null, Object.assign(part, { imgPath, wrappedText }), id);
+      return frameDone(null, Object.assign(part, { imgPath, wrappedText }), id);
     });
   }
 
-  function renderVideoParts(state, done) {
+  function renderVideoParts(state, partsDone) {
     Async.mapValuesLimit(state.parts, 6, renderVideoPart, (err, framesObj) => {
       if (err) {
-        return cb(err);
+        return partsDone(err);
       }
-      return done(null, state);
+      return partsDone(null, state);
     });
   }
 
-  function renderVideoPart(part, id, done) {
+  function renderVideoPart(part, id, partDone) {
     const vidPath = path.join(tempDir, `${id}.mp4`);
     const clipLength = part.duration + (part.after || 0);
     execFile('ffmpeg', [ '-loop', 1, '-i', part.imgPath, '-c:v', 'libx264', '-t', clipLength, '-pix_fmt', 'yuv420p', vidPath ], vidError => {
       if (vidError) {
-        return done(vidError);
+        return partDone(vidError);
       }
-      return done(null, Object.assign(part, { vidPath }));
+      return partDone(null, Object.assign(part, { vidPath }));
     });
   }
 
-  function makePlaylist(state, done) {
+  function makePlaylist(state, plDone) {
     const listFilePath = path.join(tempDir, 'vidlist.txt');
     const listStream = fs.createWriteStream(listFilePath);
     Async.eachSeries(state.parts, (part, cb) => {
       listStream.write(`file '${part.vidPath}\n`, 'UTF-8', cb);
     }, (err, cb) => {
       if (err) {
-        return done(err);
+        return plDone(err);
       }
       listStream.end();
-      done(null, Object.assign(state, { listFilePath }));
+      plDone(null, Object.assign(state, { listFilePath }));
     });
   }
 
-  function assembleVideoParts(state, done) {
+  function assembleVideoParts(state, assembleDone) {
     const assembledVidPath = path.join(tempDir, 'assembled.mp4');
     execFile('ffmpeg', [ '-f', 'concat', '-i', state.listFilePath, '-c', 'copy', assembledVidPath ], (error, stdout, stderr) => {
       if (error) {
-        return done(error);
+        return assembleDone(error);
       }
-      return done(null, Object.assign(state, { assembledVidPath }));
+      return assembleDone(null, Object.assign(state, { assembledVidPath }));
     });
   }
 
-  function muxAudio(state, done) {
+  function muxAudio(state, muxDone) {
     const muxedVidPath = path.join(tempDir, 'muxed.mp4');
     execFile('ffmpeg', [ '-i', state.assembledVidPath, '-i', state.audioPath, '-c:v', 'copy', '-c:a', 'aac', '-b:a', '48k', '-strict', 'experimental', muxedVidPath ], (error, stdout, stderr) => {
       if (error) {
-        return done(error);
+        return muxDone(error);
       }
-      return done(null, Object.assign(state, { muxedVidPath }));
+      return muxDone(null, Object.assign(state, { muxedVidPath }));
     });
   }
 
-  function createTempDir(cb) {
+  function createTempDir(dirDone) {
     fs.mkdtemp(path.join(os.tmpdir(), 'gibberfish-'), (err, dir) => {
       tempDir = dir;
-      cb(err);
+      dirDone(err);
     });
   }
 
-  function cleanTempDir(result, cb) {
-    Rimraf(tempDir, err => cb(err, result));
+  function cleanTempDir(result, cleanDone) {
+    Rimraf(tempDir, err => cleanDone(err, result));
   }
 
   function processResult(state, cb) {

@@ -42,7 +42,7 @@ Async.waterfall([
   }
 ], (err, result) => {
   if (err) {
-    console.error(err);
+    console.error('ERROR', err);
     process.exit(-1);
   }
   console.info('DONE', result);
