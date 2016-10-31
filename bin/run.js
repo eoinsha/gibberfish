@@ -12,6 +12,8 @@ const textGen = require('../lib/text-gen');
 const argv = require('yargs')
   .usage('$0 [-f inputTextFile ] outputfile.mp4')
   .alias('f', 'file')
+  .string('f')
+
   .describe('f', 'Optionally load text from a file (- for STDIN)')
   .demand(1)
   .help('h')

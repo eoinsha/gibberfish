@@ -66,13 +66,17 @@ module.exports = function(options, done) {
   function renderVtt(state, vttDone) {
     const vttPath = path.join(tempDir, 'subtitles.vtt');
     const vttStream = fs.createWriteStream(vttPath);
-    Async.eachOfSeries(state.parts, (part, idx, cb) => {
-      const from = ssHrs(part.timestamp);
-      const to = ssHrs(part.timestamp + part.duration);
-      // Add the title number as an identifier. This also allows the vtt2srt to work
-      // as it assumes numeric identifiers
-      vttStream.write(`${idx + 1}\n${from} --> ${to}\n${part.wrappedText}\n\n`, 'UTF-8', cb);
-    }, error => {
+    Async.series([
+      hdrDone => vttStream.write('WEBVTT FILE\n\n', 'utf8', hdrDone),
+      partsDone =>
+        Async.eachOfSeries(state.parts, (part, idx, cb) => {
+          const from = ssHrs(part.timestamp);
+          const to = ssHrs(part.timestamp + part.duration);
+          // Add the title number as an identifier. This also allows the vtt2srt to work
+          // as it assumes numeric identifiers
+          vttStream.write(`${idx + 1}\n${from} --> ${to}\n${part.wrappedText}\n\n`, 'utf8', cb);
+        }, partsDone)
+    ], error => {
       if (error) {
         return vttDone(error);
       }
